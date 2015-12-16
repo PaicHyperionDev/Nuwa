@@ -36,3 +36,5 @@ build/
 #Gradle
 .gradle/
 .DS_Store
+
+out_apk/

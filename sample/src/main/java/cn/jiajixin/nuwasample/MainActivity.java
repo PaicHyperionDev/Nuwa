@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         TextView textView = (TextView) findViewById(R.id.textview);
-        textView.setText(new Hello().say());
+        textView.setText(new Hello().say()+"\n"+Hello.testStatic());
     }
 
 }
