@@ -14,8 +14,6 @@ import java.io.OutputStream;
  */
 public class AssetUtils {
     public static String copyAsset(Context context, String assetName, File dir) throws IOException {
-
-
         File outFile = new File(dir, assetName);
         if (!outFile.exists()) {
             AssetManager assetManager = context.getAssets();
