@@ -1,6 +1,12 @@
 package cn.jiajixin.nuwa.util;
 
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.os.Build;
+
+import java.io.File;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 
 import dalvik.system.DexClassLoader;
 import dalvik.system.PathClassLoader;
@@ -10,13 +16,82 @@ import dalvik.system.PathClassLoader;
  */
 public class DexUtils {
 
-    public static void injectDexAtFirst(String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
+    public static void injectDexAtFirst(Context ctx,String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InstantiationException, InvocationTargetException {
+        if (hasLexClassLoader())
+            injectInAliyunOs(ctx,dexPath);
+        if (hasDexClassLoader())
+            injectDexAtFirst14(dexPath, defaultDexOptPath);
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
+            injectDexAtFirst10(dexPath, defaultDexOptPath);
+    }
+
+    private static boolean hasLexClassLoader() {
+        try {
+            Class.forName("dalvik.system.LexClassLoader");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static boolean hasDexClassLoader() {
+        try {
+            Class.forName("dalvik.system.BaseDexClassLoader");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    private static void injectInAliyunOs(Context ctx,String dexPath)
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException,
+            InstantiationException, NoSuchFieldException {
+        PathClassLoader obj = getPathClassLoader();
+        String replaceAll = new File(dexPath).getName().replaceAll("\\.[a-zA-Z0-9]+", ".lex");
+        Class cls = Class.forName("dalvik.system.LexClassLoader");
+        Object newInstance =
+                cls.getConstructor(new Class[] {String.class, String.class, String.class, ClassLoader.class}).newInstance(
+                        new Object[] {ctx.getDir("dex", 0).getAbsolutePath() + File.separator + replaceAll,
+                                ctx.getDir("dex", 0).getAbsolutePath(), dexPath, obj});
+        cls.getMethod("loadClass", new Class[] {String.class}).invoke(newInstance, new Object[] {"Hack.class"});
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mPaths",
+                appendArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mPaths"), ReflectionUtils.getField(newInstance, cls, "mRawDexPath")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mFiles",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles"), ReflectionUtils.getField(newInstance, cls, "mFiles")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mZips",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mZips"), ReflectionUtils.getField(newInstance, cls, "mZips")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mLexs",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mLexs"), ReflectionUtils.getField(newInstance, cls, "mDexs")));
+    }
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+    private static void injectDexAtFirst14(String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
         DexClassLoader dexClassLoader = new DexClassLoader(dexPath, defaultDexOptPath, dexPath, getPathClassLoader());
         Object baseDexElements = getDexElements(getPathList(getPathClassLoader()));
         Object newDexElements = getDexElements(getPathList(dexClassLoader));
         Object allDexElements = combineArray(newDexElements, baseDexElements);
         Object pathList = getPathList(getPathClassLoader());
         ReflectionUtils.setField(pathList, pathList.getClass(), "dexElements", allDexElements);
+    }
+
+    @TargetApi(Build.VERSION_CODES.GINGERBREAD)
+    private static void injectDexAtFirst10(String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
+        PathClassLoader obj = getPathClassLoader();
+        DexClassLoader dexClassLoader = new DexClassLoader(dexPath, defaultDexOptPath, dexPath, getPathClassLoader());
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mPaths",
+                appendArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mPaths"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mRawDexPath")
+                ));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mFiles",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mFiles")
+                ));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mZips",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mZips"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mZips")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mDexs",
+                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mDexs"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mDexs")));
     }
 
     private static PathClassLoader getPathClassLoader() {
@@ -49,4 +124,14 @@ public class DexUtils {
         return result;
     }
 
+    private static Object appendArray(Object obj, Object obj2) {
+        Class componentType = obj.getClass().getComponentType();
+        int length = Array.getLength(obj);
+        Object newInstance = Array.newInstance(componentType, length + 1);
+        Array.set(newInstance, 0, obj2);
+        for (int i = 1; i < length + 1; i++) {
+            Array.set(newInstance, i, Array.get(obj, i - 1));
+        }
+        return newInstance;
+    }
 }

@@ -9,6 +9,7 @@ package cn.jiajixin.nuwasample.Hello;
 public class TestModel {
     public String filedStr = "newField";
     public static String staticFiledStr = "newStaticFiled";
+
     private String word;
 
     public TestModel() {

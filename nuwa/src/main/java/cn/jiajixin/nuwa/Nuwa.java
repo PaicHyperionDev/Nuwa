@@ -15,7 +15,7 @@ import cn.jiajixin.nuwa.util.DexUtils;
 public class Nuwa {
 
     private static final String TAG = "nuwa";
-    private static final String HACK_DEX = "hack.apk";
+    private static final String HACK_DEX = "hack";
 
     private static final String DEX_DIR = "nuwa";
     private static final String DEX_OPT_DIR = "nuwaopt";
@@ -49,7 +49,7 @@ public class Nuwa {
         File dexOptDir = new File(context.getFilesDir(), DEX_OPT_DIR);
         dexOptDir.mkdir();
         try {
-            DexUtils.injectDexAtFirst(dexPath, dexOptDir.getAbsolutePath());
+            DexUtils.injectDexAtFirst(context,dexPath, dexOptDir.getAbsolutePath());
         } catch (Exception e) {
             Log.e(TAG, "inject " + dexPath + " failed");
             e.printStackTrace();
