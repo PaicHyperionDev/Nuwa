@@ -17,12 +17,13 @@ import dalvik.system.PathClassLoader;
 public class DexUtils {
 
     public static void injectDexAtFirst(Context ctx,String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InstantiationException, InvocationTargetException {
-        if (hasLexClassLoader())
-            injectInAliyunOs(ctx,dexPath);
-        if (hasDexClassLoader())
+        if (hasLexClassLoader()) {
+            injectInAliyunOs(ctx, dexPath);
+        }if (hasDexClassLoader()) {
             injectDexAtFirst14(dexPath, defaultDexOptPath);
-        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
+        }else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
             injectDexAtFirst10(dexPath, defaultDexOptPath);
+        }
     }
 
     private static boolean hasLexClassLoader() {
@@ -53,15 +54,15 @@ public class DexUtils {
                 cls.getConstructor(new Class[] {String.class, String.class, String.class, ClassLoader.class}).newInstance(
                         new Object[] {ctx.getDir("dex", 0).getAbsolutePath() + File.separator + replaceAll,
                                 ctx.getDir("dex", 0).getAbsolutePath(), dexPath, obj});
-        cls.getMethod("loadClass", new Class[] {String.class}).invoke(newInstance, new Object[] {"Hack.class"});
+        cls.getMethod("loadClass", new Class[] {String.class}).invoke(newInstance, new Object[] {"cn.jiajixin.nuwa.Hack"});
         ReflectionUtils.setField(obj, PathClassLoader.class, "mPaths",
                 appendArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mPaths"), ReflectionUtils.getField(newInstance, cls, "mRawDexPath")));
         ReflectionUtils.setField(obj, PathClassLoader.class, "mFiles",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles"), ReflectionUtils.getField(newInstance, cls, "mFiles")));
+                combineArray(ReflectionUtils.getField(newInstance, cls, "mFiles"),ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles")));
         ReflectionUtils.setField(obj, PathClassLoader.class, "mZips",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mZips"), ReflectionUtils.getField(newInstance, cls, "mZips")));
+                combineArray(ReflectionUtils.getField(newInstance, cls, "mZips"),ReflectionUtils.getField(obj, PathClassLoader.class, "mZips")));
         ReflectionUtils.setField(obj, PathClassLoader.class, "mLexs",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mLexs"), ReflectionUtils.getField(newInstance, cls, "mDexs")));
+                combineArray(ReflectionUtils.getField(newInstance, cls, "mDexs"),ReflectionUtils.getField(obj, PathClassLoader.class, "mLexs")));
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
@@ -78,25 +79,20 @@ public class DexUtils {
     private static void injectDexAtFirst10(String dexPath, String defaultDexOptPath) throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
         PathClassLoader obj = getPathClassLoader();
         DexClassLoader dexClassLoader = new DexClassLoader(dexPath, defaultDexOptPath, dexPath, getPathClassLoader());
-        ReflectionUtils.setField(obj, PathClassLoader.class, "mPaths",
-                appendArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mPaths"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
-                        "mRawDexPath")
-                ));
-        ReflectionUtils.setField(obj, PathClassLoader.class, "mFiles",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
-                        "mFiles")
-                ));
-        ReflectionUtils.setField(obj, PathClassLoader.class, "mZips",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mZips"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
-                        "mZips")));
-        ReflectionUtils.setField(obj, PathClassLoader.class, "mDexs",
-                combineArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mDexs"), ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
-                        "mDexs")));
+        dexClassLoader.loadClass("cn.jiajixin.nuwa.Hack");
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mPaths",appendArray(ReflectionUtils.getField(obj, PathClassLoader.class, "mPaths"),
+                        ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mRawDexPath")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mFiles",combineArray(ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mFiles"),ReflectionUtils.getField(obj, PathClassLoader.class, "mFiles")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mZips", combineArray(ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mZips"),ReflectionUtils.getField(obj, PathClassLoader.class, "mZips")));
+        ReflectionUtils.setField(obj, PathClassLoader.class, "mDexs", combineArray(ReflectionUtils.getField(dexClassLoader, DexClassLoader.class,
+                        "mDexs"),ReflectionUtils.getField(obj, PathClassLoader.class, "mDexs")));
     }
 
     private static PathClassLoader getPathClassLoader() {
-        PathClassLoader pathClassLoader = (PathClassLoader) DexUtils.class.getClassLoader();
-        return pathClassLoader;
+        return  (PathClassLoader) DexUtils.class.getClassLoader();
     }
 
     private static Object getDexElements(Object paramObject)
