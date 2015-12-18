@@ -7,22 +7,21 @@ package cn.jiajixin.nuwasample.Hello;
  * @date 15/12/16 18:47
  */
 public class TestModel {
-    public String filedStr = "oldField";
-    public static String staticFiledStr = "oldStaticFiled";
-
+    public String filedStr = "newField";
+    public static String staticFiledStr = "newStaticFiled";
     private String word;
 
     public TestModel() {
-        word = "old before fix";
+        word = "new after fix";
     }
 
     public String say() {
-        return "old say->" + word;
+        return "new say->" + word;
     }
 
 
     public static String testStatic() {
-        return "old static";
+        return "new static";
     }
 }
 
